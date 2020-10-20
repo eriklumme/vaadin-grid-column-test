@@ -26,6 +26,7 @@ public class MainView extends VerticalLayout {
 
     private static final String BUTTON_TEMPLATE =
             "<vaadin-button on-click='showNotification'>Template-Button-[[item.number]]-%d</vaadin-button>";
+    private static final int COLUMN_MAX = 100;
 
     private final IntegerField textColumns;
     private final IntegerField templateButtonColumns;
@@ -42,10 +43,10 @@ public class MainView extends VerticalLayout {
     private Grid<Integer> grid;
 
     public MainView() {
-        textColumns = new IntegerField("Text columns");
-        templateButtonColumns = new IntegerField("Template columns (Button)");
-        componentButtonColumns = new IntegerField("Component columns (Button)");
-        componentComboBoxColumns = new IntegerField("Component columns (Combo box)");
+        textColumns = createIntegerField("Text columns");
+        templateButtonColumns = createIntegerField("Template columns (Button)");
+        componentButtonColumns = createIntegerField("Component columns (Button)");
+        componentComboBoxColumns = createIntegerField("Component columns (Combo box)");
         Button renderButton = new Button("Render", e -> createGrid());
 
         HorizontalLayout toolbar = new HorizontalLayout();
@@ -55,6 +56,12 @@ public class MainView extends VerticalLayout {
         add(toolbar);
 
         setSizeFull();
+    }
+
+    private IntegerField createIntegerField(String label) {
+        IntegerField integerField = new IntegerField(label);
+        integerField.setMax(COLUMN_MAX);
+        return integerField;
     }
 
     private void createGrid() {
@@ -85,7 +92,7 @@ public class MainView extends VerticalLayout {
     }
 
     private Integer getValue(IntegerField field) {
-        return Optional.ofNullable(field.getValue()).orElse(0);
+        return Math.min(COLUMN_MAX, Optional.ofNullable(field.getValue()).orElse(0));
     }
 
     private ValueProvider<Integer, String> createText(int columnIndex) {
