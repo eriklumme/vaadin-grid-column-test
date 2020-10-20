@@ -2,6 +2,8 @@
 
 This is a project for testing the performance of Vaadin Grid columns.
 
+Possibly working live demo: https://vaadin-grid-column-test.herokuapp.com/
+
 ## Running the Application
 There are two ways to run the application :  using `mvn spring-boot:run` or by running the `Application` class directly from your IDE.
 
