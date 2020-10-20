@@ -13,6 +13,8 @@ import com.vaadin.flow.data.renderer.TemplateRenderer;
 import com.vaadin.flow.function.ValueProvider;
 import com.vaadin.flow.router.Route;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.IntStream;
 
@@ -23,7 +25,7 @@ import java.util.stream.IntStream;
 public class MainView extends VerticalLayout {
 
     private static final String BUTTON_TEMPLATE =
-            "<vaadin-button>Template-Button-%d-[[item.number]]</vaadin-button on-click='showNotification%d'>";
+            "<vaadin-button on-click='showNotification'>Template-Button-[[item.number]]-%d</vaadin-button>";
 
     private final IntegerField textColumns;
     private final IntegerField templateButtonColumns;
@@ -35,17 +37,24 @@ public class MainView extends VerticalLayout {
             query -> 10000
     );
 
+    private final List<String> comboBoxItems = Arrays.asList("One", "Two", "Three", "Four");
+
     private Grid<Integer> grid;
 
     public MainView() {
-        HorizontalLayout toolbar = new HorizontalLayout();
         textColumns = new IntegerField("Text columns");
         templateButtonColumns = new IntegerField("Template columns (Button)");
         componentButtonColumns = new IntegerField("Component columns (Button)");
         componentComboBoxColumns = new IntegerField("Component columns (Combo box)");
         Button renderButton = new Button("Render", e -> createGrid());
-        toolbar.add(textColumns, templateButtonColumns, componentButtonColumns, componentComboBoxColumns, renderButton);
+
+        HorizontalLayout toolbar = new HorizontalLayout();
+        toolbar.setAlignItems(Alignment.BASELINE);
+        toolbar.setWidthFull();
+        toolbar.addAndExpand(textColumns, templateButtonColumns, componentButtonColumns, componentComboBoxColumns, renderButton);
         add(toolbar);
+
+        setSizeFull();
     }
 
     private void createGrid() {
@@ -55,44 +64,57 @@ public class MainView extends VerticalLayout {
         grid = new Grid<>();
 
         for (int c = 0; c < getValue(textColumns); c++) {
-            int columnIndex = c;
-            grid.addColumn(i -> "Text-" + columnIndex + "-" + i).setAutoWidth(true).setHeader("Text-" + columnIndex);
+            grid.addColumn(createText(c))
+                    .setAutoWidth(true).setHeader("Text-" + c);
         }
         for (int c = 0; c < getValue(templateButtonColumns); c++) {
-            grid.addColumn(createButtonRenderer(c)).setAutoWidth(true).setHeader("Template-Button-" + c);
+            grid.addColumn(createButtonRenderer(c))
+                    .setAutoWidth(true).setHeader("Template-Button-" + c);
         }
         for (int c = 0; c < getValue(componentButtonColumns); c++) {
-            grid.addComponentColumn(createButtonFactory(c)).setAutoWidth(true).setHeader("Component-Button-" + c);
+            grid.addComponentColumn(createButtonFactory(c))
+                    .setAutoWidth(true).setHeader("Component-Button-" + c);
         }
         for (int c = 0; c < getValue(componentComboBoxColumns); c++) {
-            grid.addComponentColumn(createComboBoxFactory(c)).setAutoWidth(true).setHeader("Component-Combo-Box" + c);
+            grid.addComponentColumn(createComboBoxFactory(c))
+                    .setAutoWidth(true).setHeader("Component-Combo-Box" + c);
         }
 
         grid.setDataProvider(dataProvider);
-        add(grid);
+        addAndExpand(grid);
     }
 
     private Integer getValue(IntegerField field) {
         return Optional.ofNullable(field.getValue()).orElse(0);
     }
 
+    private ValueProvider<Integer, String> createText(int columnIndex) {
+        return i -> String.format("Text-%d-%d", i, columnIndex);
+    }
+
     private TemplateRenderer<Integer> createButtonRenderer(int columnIndex) {
-        return TemplateRenderer.<Integer>of(String.format(BUTTON_TEMPLATE, columnIndex, columnIndex))
-                .withProperty("number", i -> i);
+        return TemplateRenderer.<Integer>of(String.format(BUTTON_TEMPLATE, columnIndex))
+                .withProperty("number", i -> i)
+                .withEventHandler("showNotification", i ->
+                        showNotification("template button", i, columnIndex));
     }
 
     private ValueProvider<Integer, Component> createButtonFactory(int columnIndex) {
-        return i -> new Button("Component-Button-" + columnIndex + "-" + i, e ->
-                Notification.show("Clicked row " + i + " column " + columnIndex));
+        return i -> new Button(String.format("Component-Button-%d-%d", i, columnIndex),
+                e -> showNotification("component button", i, columnIndex));
     }
 
     private ValueProvider<Integer, Component> createComboBoxFactory(int columnIndex) {
         return i -> {
-            ComboBox<String> comboBox = new ComboBox<>("Component-Combo-Box-" + columnIndex + "-" + i);
-            comboBox.setItems("One", "Two", "Three", "Four", "Five");
-            comboBox.addValueChangeListener(e ->
-                    Notification.show("Selected value " + e.getValue() + " in row " + i + " column " + columnIndex));
+            ComboBox<String> comboBox = new ComboBox<>(String.format("Component-Combo-Box-%d-%d", i, columnIndex));
+            comboBox.setItems(comboBoxItems);
+            comboBox.addValueChangeListener(e -> Notification.show(
+                    String.format("Selected value %s in row %d component combo-box column %d", e.getValue(), i, columnIndex)));
             return comboBox;
         };
+    }
+
+    private void showNotification(String type, int rowIndex, int columnIndex) {
+        Notification.show(String.format("Clicked row %d %s column %d", rowIndex, type, columnIndex));
     }
 }
